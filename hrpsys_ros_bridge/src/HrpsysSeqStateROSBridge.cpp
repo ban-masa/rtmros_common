@@ -153,6 +153,8 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge::onInitialize() {
     fsensor_pub[i+m_rsforceIn.size()+m_offforceIn.size()] = nh.advertise<geometry_msgs::WrenchStamped>(m_mcforceName[i], 10);
   }
   zmp_pub = nh.advertise<geometry_msgs::PointStamped>("/zmp", 10);
+  st_ref_zmp_pub = nh.advertise<geometry_msgs::PointStamped>("/st_ref_zmp", 10);
+  st_new_zmp_pub = nh.advertise<geometry_msgs::PointStamped>("/st_new_zmp", 10);
   ref_cp_pub = nh.advertise<geometry_msgs::PointStamped>("/ref_capture_point", 10);
   act_cp_pub = nh.advertise<geometry_msgs::PointStamped>("/act_capture_point", 10);
   ref_contact_states_pub = nh.advertise<hrpsys_ros_bridge::ContactStatesStamped>("/ref_contact_states", 10);
@@ -710,6 +712,50 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge::onExecute(RTC::UniqueId ec_id)
       zmpv.point.y = m_rszmp.data.y;
       zmpv.point.z = m_rszmp.data.z;
       zmp_pub.publish(zmpv);
+    }
+    catch(const std::runtime_error &e)
+      {
+        ROS_ERROR_STREAM("[" << getInstanceName() << "] " << e.what());
+      }
+  }
+
+  if ( m_rsRefZmpIn.isNew() ) {
+    try {
+      m_rsRefZmpIn.read();
+      //ROS_DEBUG_STREAM("[" << getInstanceName() << "] @onExecute " << m_rsforceName[i] << " size = " << m_rsforce[i].data.length() );
+      geometry_msgs::PointStamped zmpv;
+      if ( use_hrpsys_time ) {
+        zmpv.header.stamp = ros::Time(m_rsRefZmp.tm.sec, m_rsRefZmp.tm.nsec);
+      }else{
+        zmpv.header.stamp = tm_on_execute;
+      }
+      zmpv.header.frame_id = std::string("ground");
+      zmpv.point.x = m_rsRefZmp.data.x;
+      zmpv.point.y = m_rsRefZmp.data.y;
+      zmpv.point.z = m_rsRefZmp.data.z;
+      st_ref_zmp_pub.publish(zmpv);
+    }
+    catch(const std::runtime_error &e)
+      {
+        ROS_ERROR_STREAM("[" << getInstanceName() << "] " << e.what());
+      }
+  }
+
+  if ( m_rsNewZmpIn.isNew() ) {
+    try {
+      m_rsNewZmpIn.read();
+      //ROS_DEBUG_STREAM("[" << getInstanceName() << "] @onExecute " << m_rsforceName[i] << " size = " << m_rsforce[i].data.length() );
+      geometry_msgs::PointStamped zmpv;
+      if ( use_hrpsys_time ) {
+        zmpv.header.stamp = ros::Time(m_rsNewZmp.tm.sec, m_rsNewZmp.tm.nsec);
+      }else{
+        zmpv.header.stamp = tm_on_execute;
+      }
+      zmpv.header.frame_id = std::string("ground");
+      zmpv.point.x = m_rsNewZmp.data.x;
+      zmpv.point.y = m_rsNewZmp.data.y;
+      zmpv.point.z = m_rsNewZmp.data.z;
+      st_new_zmp_pub.publish(zmpv);
     }
     catch(const std::runtime_error &e)
       {
